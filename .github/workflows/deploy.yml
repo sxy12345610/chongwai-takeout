@@ -32,6 +32,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # 在仓库 Settings → Secrets and variables → Actions → Variables 配置；
+          # 未配置时回退到 src/api/request.js 中的本地地址（仅用于展示版）。
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

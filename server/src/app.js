@@ -11,9 +11,26 @@ const app = express()
 
 app.disable('x-powered-by')
 app.use(helmet())
+
+/**
+ * 跨域策略：
+ * - 生产环境：仅允许 CORS_ORIGINS 白名单中的 Origin（未配置则拒绝所有跨域）；
+ * - 非生产环境：未配置白名单时放行，便于本地联调。
+ */
+const allowedOrigins = (env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean)
+const isProduction = env.NODE_ENV === 'production'
+
 app.use(
   cors({
-    origin: env.NODE_ENV === 'production' ? false : true,
+    origin(origin, callback) {
+      // 无 Origin：curl、服务端调用、微信小程序等非浏览器请求
+      if (!origin) return callback(null, true)
+      if (!isProduction && allowedOrigins.length === 0) return callback(null, true)
+      return callback(null, allowedOrigins.includes(origin))
+    },
     credentials: true,
   }),
 )

@@ -18,6 +18,9 @@ const envSchema = z.object({
   // 微信小程序登录（AppSecret 仅存后端环境变量，未配置时 wx-login 不伪造成功）
   WECHAT_APPID: z.string().optional(),
   WECHAT_SECRET: z.string().optional(),
+  // 浏览器跨域白名单：逗号分隔的完整 Origin（协议+域名，不含路径）。
+  // 生产环境未配置时拒绝所有跨域请求；非生产环境未配置时放行。
+  CORS_ORIGINS: z.string().optional(),
   // 平台管理员白名单：逗号分隔的 user id（避免新增数据表，管理员角色由此判定）
   ADMIN_USER_IDS: z.string().optional(),
   // 开发态管理员账号（仅非生产环境生效）：设置后启动时自动确保该账号存在，
