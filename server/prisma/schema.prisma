@@ -1,0 +1,424 @@
+// 重外校园外卖平台数据模型
+// 数据库：PostgreSQL，金额统一使用整数分（*_cents）
+// 说明：部分约束（默认地址唯一索引、订单金额 CHECK）见 migrations 中的原生 SQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum MerchantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum MerchantUserRole {
+  OWNER
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  DELIVERING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  WECHAT
+  ALIPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CLOSED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+enum DeliveryPersonStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum DeliveryTaskStatus {
+  PENDING
+  ACCEPTED
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  phone         String?    @unique @db.VarChar(20)
+  passwordHash  String?    @map("password_hash") @db.VarChar(255)
+  nickname      String     @db.VarChar(30)
+  avatarUrl     String?    @map("avatar_url")
+  wechatOpenid  String?    @unique @map("wechat_openid") @db.VarChar(64)
+  wechatUnionid String?    @map("wechat_unionid") @db.VarChar(64)
+  alipayUserId  String?    @unique @map("alipay_user_id") @db.VarChar(64)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  addresses      Address[]
+  cart           Cart?
+  orders         Order[]
+  checkoutRequests CheckoutRequest[]
+  reviews        Review[]
+  merchantUsers  MerchantUser[]
+  deliveryPerson DeliveryPerson?
+
+  @@map("users")
+}
+
+model Merchant {
+  id               String         @id @default(uuid()) @db.Uuid
+  name             String         @db.VarChar(50)
+  description      String?
+  announcement     String?        @db.VarChar(200)
+  categoryLabel    String?        @map("category_label") @db.VarChar(20)
+  tags             String[]       @default([])
+  minOrderCents    Int            @default(0) @map("min_order_cents")
+  deliveryFeeCents Int            @default(0) @map("delivery_fee_cents")
+  deliveryTimeMin  Int            @default(20) @map("delivery_time_min")
+  isOpen           Boolean        @default(true) @map("is_open")
+  rating           Decimal        @default(5.0) @db.Decimal(2, 1)
+  monthlySales     Int            @default(0) @map("monthly_sales")
+  imageUrl         String?        @map("image_url")
+  coverFrom        String?        @map("cover_from") @db.VarChar(20)
+  coverTo          String?        @map("cover_to") @db.VarChar(20)
+  status           MerchantStatus @default(PENDING)
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  products      Product[]
+  orders        Order[]
+  merchantUsers MerchantUser[]
+  reviews       Review[]
+  deliveryTasks DeliveryTask[]
+
+  @@index([status, isOpen])
+  @@map("merchants")
+}
+
+model MerchantUser {
+  id         String           @id @default(uuid()) @db.Uuid
+  merchantId String           @map("merchant_id") @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  role       MerchantUserRole @default(OWNER)
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, userId])
+  @@index([userId])
+  @@map("merchant_users")
+}
+
+model Category {
+  id        String    @id @default(uuid()) @db.Uuid
+  key       String    @unique @db.VarChar(20)
+  name      String    @db.VarChar(20)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           String    @id @default(uuid()) @db.Uuid
+  merchantId   String    @map("merchant_id") @db.Uuid
+  categoryId   String?   @map("category_id") @db.Uuid
+  name         String    @db.VarChar(50)
+  description  String?   @db.VarChar(200)
+  imageUrl     String?   @map("image_url")
+  priceCents   Int       @map("price_cents")
+  stock        Int       @default(0)
+  monthlySales Int       @default(0) @map("monthly_sales")
+  menuCategory String?   @map("menu_category") @db.VarChar(20)
+  isAvailable  Boolean   @default(true) @map("is_available")
+  isHot        Boolean   @default(false) @map("is_hot")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  merchant   Merchant     @relation(fields: [merchantId], references: [id])
+  category   Category?    @relation(fields: [categoryId], references: [id])
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([merchantId, isAvailable, deletedAt])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model Address {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  contactName String   @map("contact_name") @db.VarChar(20)
+  phone       String   @db.VarChar(20)
+  campusArea  String?  @map("campus_area") @db.VarChar(30)
+  building    String?  @db.VarChar(30)
+  room        String?  @db.VarChar(30)
+  detail      String?  @db.VarChar(100)
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @unique @map("user_id") @db.Uuid
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  cartId    String   @map("cart_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  quantity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id               String      @id @default(uuid()) @db.Uuid
+  orderNo          String      @unique @map("order_no") @db.VarChar(32)
+  checkoutGroupNo  String      @map("checkout_group_no") @db.VarChar(32)
+  userId           String      @map("user_id") @db.Uuid
+  merchantId       String      @map("merchant_id") @db.Uuid
+  addressId        String?     @map("address_id") @db.Uuid
+  contactName      String      @map("contact_name") @db.VarChar(20)
+  contactPhone     String      @map("contact_phone") @db.VarChar(20)
+  addressText      String      @map("address_text") @db.VarChar(200)
+  status           OrderStatus @default(PENDING)
+  subtotalCents    Int         @map("subtotal_cents")
+  deliveryFeeCents Int         @map("delivery_fee_cents")
+  discountCents    Int         @default(0) @map("discount_cents")
+  totalCents       Int         @map("total_cents")
+  note             String?     @db.VarChar(200)
+  cancelReason     String?     @map("cancel_reason") @db.VarChar(100)
+  acceptedAt       DateTime?   @map("accepted_at")
+  deliveringAt     DateTime?   @map("delivering_at")
+  completedAt      DateTime?   @map("completed_at")
+  cancelledAt      DateTime?   @map("cancelled_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id])
+  merchant      Merchant       @relation(fields: [merchantId], references: [id])
+  address       Address?       @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  paymentOrders PaymentOrder[]
+  refunds       Refund[]
+  review        Review?
+  deliveryTask  DeliveryTask?
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([merchantId, status, createdAt(sort: Desc)])
+  @@index([checkoutGroupNo])
+  @@map("orders")
+}
+
+/// 结算幂等记录：一次「提交订单」请求对应一行，共享 checkout_group_no。
+/// (user_id, idempotency_key) 唯一，保证并发重复提交只能成功写入一次。
+model CheckoutRequest {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  idempotencyKey  String   @map("idempotency_key") @db.VarChar(80)
+  requestHash     String   @map("request_hash") @db.VarChar(64)
+  checkoutGroupNo String   @map("checkout_group_no") @db.VarChar(32)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([checkoutGroupNo])
+  @@map("checkout_requests")
+}
+
+model OrderItem {
+  id             String  @id @default(uuid()) @db.Uuid
+  orderId        String  @map("order_id") @db.Uuid
+  productId      String? @map("product_id") @db.Uuid
+  productName    String  @map("product_name") @db.VarChar(50)
+  productImage   String? @map("product_image")
+  menuCategory   String? @map("menu_category") @db.VarChar(20)
+  unitPriceCents Int     @map("unit_price_cents")
+  quantity       Int
+  subtotalCents  Int     @map("subtotal_cents")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Payment {
+  id              String          @id @default(uuid()) @db.Uuid
+  checkoutGroupNo String          @map("checkout_group_no") @db.VarChar(32)
+  provider        PaymentProvider
+  outTradeNo      String          @unique @map("out_trade_no") @db.VarChar(64)
+  providerTradeNo String?         @unique @map("provider_trade_no") @db.VarChar(64)
+  amountCents     Int             @map("amount_cents")
+  status          PaymentStatus   @default(PENDING)
+  prepayId        String?         @map("prepay_id") @db.VarChar(128)
+  payerOpenid     String?         @map("payer_openid") @db.VarChar(64)
+  payerUserId     String?         @map("payer_user_id") @db.VarChar(64)
+  rawNotify       Json?           @map("raw_notify")
+  paidAt          DateTime?       @map("paid_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  paymentOrders PaymentOrder[]
+  refunds       Refund[]
+
+  @@index([checkoutGroupNo])
+  @@index([status, createdAt])
+  @@map("payments")
+}
+
+model PaymentOrder {
+  id          String @id @default(uuid()) @db.Uuid
+  paymentId   String @map("payment_id") @db.Uuid
+  orderId     String @map("order_id") @db.Uuid
+  amountCents Int    @map("amount_cents")
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id])
+
+  @@unique([paymentId, orderId])
+  @@index([orderId])
+  @@map("payment_orders")
+}
+
+model Refund {
+  id               String       @id @default(uuid()) @db.Uuid
+  paymentId        String       @map("payment_id") @db.Uuid
+  orderId          String       @map("order_id") @db.Uuid
+  outRefundNo      String       @unique @map("out_refund_no") @db.VarChar(64)
+  providerRefundNo String?      @map("provider_refund_no") @db.VarChar(64)
+  amountCents      Int          @map("amount_cents")
+  reason           String?      @db.VarChar(100)
+  status           RefundStatus @default(PENDING)
+  rawNotify        Json?        @map("raw_notify")
+  refundedAt       DateTime?    @map("refunded_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+
+  @@index([paymentId])
+  @@index([orderId])
+  @@map("refunds")
+}
+
+model Review {
+  id          String   @id @default(uuid()) @db.Uuid
+  orderId     String   @unique @map("order_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  merchantId  String   @map("merchant_id") @db.Uuid
+  rating      Int
+  content     String?  @db.VarChar(500)
+  images      Json?
+  isAnonymous Boolean  @default(false) @map("is_anonymous")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+
+  @@index([merchantId, createdAt(sort: Desc)])
+  @@map("reviews")
+}
+
+model DeliveryPerson {
+  id               String               @id @default(uuid()) @db.Uuid
+  userId           String               @unique @map("user_id") @db.Uuid
+  realName         String               @map("real_name") @db.VarChar(20)
+  phone            String               @db.VarChar(20)
+  status           DeliveryPersonStatus @default(ACTIVE)
+  isOnline         Boolean              @default(false) @map("is_online")
+  currentTaskCount Int                  @default(0) @map("current_task_count")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks DeliveryTask[]
+
+  @@index([status, isOnline])
+  @@map("delivery_persons")
+}
+
+model DeliveryTask {
+  id               String             @id @default(uuid()) @db.Uuid
+  taskNo           String             @unique @map("task_no") @db.VarChar(32)
+  orderId          String             @unique @map("order_id") @db.Uuid
+  merchantId       String             @map("merchant_id") @db.Uuid
+  deliveryPersonId String?            @map("delivery_person_id") @db.Uuid
+  status           DeliveryTaskStatus @default(PENDING)
+  pickupAddress    String             @map("pickup_address") @db.VarChar(200)
+  dropoffAddress   String             @map("dropoff_address") @db.VarChar(200)
+  contactName      String             @map("contact_name") @db.VarChar(20)
+  contactPhone     String             @map("contact_phone") @db.VarChar(20)
+  deliveryFeeCents Int                @default(0) @map("delivery_fee_cents")
+  assignedAt       DateTime?          @map("assigned_at")
+  acceptedAt       DateTime?          @map("accepted_at")
+  pickedUpAt       DateTime?          @map("picked_up_at")
+  deliveredAt      DateTime?          @map("delivered_at")
+  cancelledAt      DateTime?          @map("cancelled_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  merchant       Merchant        @relation(fields: [merchantId], references: [id])
+  deliveryPerson DeliveryPerson? @relation(fields: [deliveryPersonId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([deliveryPersonId, status])
+  @@map("delivery_tasks")
+}

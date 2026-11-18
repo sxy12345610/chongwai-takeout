@@ -1,0 +1,26 @@
+/* 重外校园外卖 · uni-app 全局 SCSS 变量（蓝白主题） */
+$cw-primary: #1769aa;
+$cw-primary-light: #4e9fdf;
+$cw-text: #1f2d3d;
+$cw-text-muted: #7a8b9a;
+$cw-bg: #f5f8fb;
+$cw-white: #ffffff;
+$cw-price: #e8543f;
+
+$uni-color-primary: $cw-primary;
+$uni-color-success: #2e9e5b;
+$uni-color-warning: #e6a23c;
+$uni-color-error: #e8543f;
+
+$uni-text-color: $cw-text;
+$uni-text-color-grey: $cw-text-muted;
+$uni-bg-color: $cw-bg;
+$uni-bg-color-grey: #eef2f6;
+$uni-border-color: #e6edf3;
+
+$uni-font-size-sm: 24rpx;
+$uni-font-size-base: 28rpx;
+$uni-font-size-lg: 32rpx;
+
+$uni-border-radius-base: 16rpx;
+$uni-border-radius-lg: 24rpx;

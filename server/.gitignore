@@ -1,0 +1,18 @@
+node_modules/
+dist/
+
+# 环境变量与密钥（禁止提交）
+.env
+.env.*
+!.env.example
+
+# 支付/平台证书
+certs/
+*.pem
+*.p12
+*.pfx
+
+# 日志与临时文件
+logs/
+*.log
+.DS_Store

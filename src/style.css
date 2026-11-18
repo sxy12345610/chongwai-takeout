@@ -1,0 +1,239 @@
+/* ==========================================================================
+   重外校园外卖平台 · 全局样式
+   蓝白主题变量 / 基础重置 / 通用组件
+   ========================================================================== */
+
+:root {
+  /* 品牌色板 */
+  --brand-primary: #1769aa;
+  --brand-secondary: #2878c8;
+  --brand-soft: #eaf4ff;
+  --page-bg: #f7fafd;
+  --surface: #ffffff;
+  --text-primary: #263445;
+  --text-secondary: #8996a5;
+  --border-soft: #e6eff8;
+
+  /* 阴影 */
+  --shadow-sm: 0 4px 14px rgba(23, 105, 170, 0.06);
+  --shadow-card: 0 10px 30px rgba(23, 105, 170, 0.08);
+  --shadow-hover: 0 18px 40px rgba(23, 105, 170, 0.14);
+
+  /* 圆角 */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  /* 布局尺寸 */
+  --header-height: 64px;
+  --tabbar-height: 62px;
+  --container-width: 1120px;
+
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Source Han Sans SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background-color: var(--page-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-secondary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background-color: var(--brand-soft);
+  color: var(--brand-primary);
+}
+
+/* 通用布局 */
+.container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+
+/* 通用卡片 */
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* 通用按钮 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  transition: background-color 0.2s ease, color 0.2s ease,
+    transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn--primary {
+  background-color: var(--brand-primary);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(23, 105, 170, 0.24);
+}
+
+.btn--primary:hover {
+  background-color: #125a93;
+  transform: translateY(-1px);
+}
+
+.btn--soft {
+  background-color: var(--brand-soft);
+  color: var(--brand-primary);
+}
+
+.btn--soft:hover {
+  background-color: #dceeff;
+  transform: translateY(-1px);
+}
+
+/* 通用标签 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background-color: var(--brand-soft);
+  color: var(--brand-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-inline: 16px;
+  }
+}
+
+/* 内页通用布局 */
+.page {
+  padding-top: 20px;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.page-head__title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.page-head__desc {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding-top: 30px;
+  }
+
+  .page-head__title {
+    font-size: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
